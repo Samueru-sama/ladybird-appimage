@@ -1,0 +1,40 @@
+--- a/Services/RequestServer/SandboxLinux.cpp
++++ b/Services/RequestServer/SandboxLinux.cpp
+@@ -22,6 +22,11 @@
+     TRY(Core::Directory::create(cache_path, Core::Directory::CreateDirectories::Yes));
+ 
+     TRY(Sandbox::add_landlock_path_if_exists(paths, "/etc/ssl"sv, Sandbox::LandlockPath::Access::ReadOnly));
++    TRY(Sandbox::add_landlock_path_if_exists(paths, "/etc/pki"sv, Sandbox::LandlockPath::Access::ReadOnly));
++    TRY(Sandbox::add_landlock_path_if_exists(paths, "/etc/ca-certificates"sv, Sandbox::LandlockPath::Access::ReadOnly));
++    TRY(Sandbox::add_landlock_path_if_exists(paths, "/var/lib/ca-certificates"sv, Sandbox::LandlockPath::Access::ReadOnly));
++    TRY(Sandbox::add_landlock_path_if_exists(paths, "/usr/share/ca-certificates"sv, Sandbox::LandlockPath::Access::ReadOnly));
++    TRY(Sandbox::add_landlock_path_if_exists(paths, "/usr/local/share/ca-certificates"sv, Sandbox::LandlockPath::Access::ReadOnly));
+     TRY(Sandbox::add_landlock_path_if_exists(paths, "/etc/host.conf"sv, Sandbox::LandlockPath::Access::ReadOnly));
+     TRY(Sandbox::add_landlock_path_if_exists(paths, "/etc/hosts"sv, Sandbox::LandlockPath::Access::ReadOnly));
+     TRY(Sandbox::add_landlock_path_if_exists(paths, "/etc/nsswitch.conf"sv, Sandbox::LandlockPath::Access::ReadOnly));
+--- a/Services/RequestServer/main.cpp
++++ b/Services/RequestServer/main.cpp
+@@ -10,6 +10,7 @@
+ #include <AK/StringView.h>
+ #include <AK/Vector.h>
+ #include <LibCore/ArgsParser.h>
++#include <LibCore/Environment.h>
+ #include <LibCore/EventLoop.h>
+ #include <LibCore/Process.h>
+ #include <LibCore/System.h>
+@@ -62,6 +63,16 @@
+         Core::Process::wait_for_debugger_and_break();
+ 
+     // FIXME: Update RequestServer to support multiple custom root certificates.
++    if (certificates.is_empty()) {
++        // Fall back to the SSL_CERT_FILE environment variable when no certificate path is explicitly
++        // provided, so that distributions that keep their CA bundle in a non-default location (such
++        // as /var/lib/ca-certificates/ca-bundle.pem or /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem)
++        // can be used.
++        auto ssl_cert_file = Core::Environment::get("SSL_CERT_FILE"sv);
++        if (ssl_cert_file.has_value() && !ssl_cert_file->is_empty())
++            certificates.append(ssl_cert_file->to_byte_string());
++    }
++
+     if (!certificates.is_empty())
+         RequestServer::set_default_certificate_path(certificates.first());
