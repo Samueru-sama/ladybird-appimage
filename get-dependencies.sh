@@ -9,7 +9,7 @@ echo "---------------------------------------------------------------"
 # pacman -Syu --noconfirm PACKAGESHERE
 
 if [ "$ARCH" = 'x86_64' ]; then
-		pacman -Syu --noconfirm libva-intel-driver
+	pacman -Syu --noconfirm libva-intel-driver
 fi
 
 echo "Installing debloated packages..."

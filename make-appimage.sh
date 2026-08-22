@@ -22,10 +22,33 @@ quick-sharun \
 
 mv -v ./AppDir/lib/angle/usr/lib/* ./AppDir/lib
 
+# time() is blocked by the default sandbox rules
+# but clock_gettime() and gettimeofday() are allowed
+cat <<-'EOF' >> ./AppDir/.timeshim.c
+#define _GNU_SOURCE
+#include <time.h>
+#include <sys/time.h>
+
+time_t time(time_t *t) {
+    struct timespec ts;
+    if (clock_gettime(CLOCK_REALTIME, &ts) != 0) {
+        struct timeval tv;
+        gettimeofday(&tv, NULL);
+        ts.tv_sec = tv.tv_sec;
+    }
+    if (t)
+        *t = ts.tv_sec;
+    return ts.tv_sec;
+}
+EOF
+
+cc -shared -fPIC -O2 -o ./AppDir/lib/timeshim.so ./AppDir/.timeshim.c
+echo 'timeshim.so' >> ./AppDir/.preload
+
 # Turn AppDir into AppImage
 quick-sharun --make-appimage
 
 # Test the app for 12 seconds, if the test fails due to the app
 # having issues running in the CI use --simple-test instead
 pacman -S --noconfirm vulkan-swrast # app now needs a vulkan device to launch
-quick-sharun --simple-test ./dist/*.AppImage
+quick-sharun --test ./dist/*.AppImage
