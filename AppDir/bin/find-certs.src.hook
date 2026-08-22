@@ -18,7 +18,7 @@ if [ "$_do_not_search_certs" != 1 ]; then
 	"
 	for c in _$_possible_certs; do
 		if [ -f "$c" ]; then
-			set -- --certificate "$c" "$@"
+			set -- --certificate "$(readlink -f "$c")" "$@"
 			break
 		fi
 	done

@@ -24,7 +24,7 @@ mv -v ./AppDir/lib/angle/usr/lib/* ./AppDir/lib
 
 # time() is blocked by the default sandbox rules
 # but clock_gettime() and gettimeofday() are allowed
-cat <<-'EOF' >> ./AppDir/.timeshim.c
+cat <<-'EOF' > ./AppDir/.timeshim.c
 #define _GNU_SOURCE
 #include <time.h>
 #include <sys/time.h>
