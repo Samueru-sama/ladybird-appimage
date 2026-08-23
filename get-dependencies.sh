@@ -34,8 +34,8 @@ cd ./ladybird
 VERSION=r$(git rev-list --count HEAD).$(git rev-parse --short HEAD)
 echo "$VERSION" > ~/version
 
-# vcpkg is used to build all the third party dependencies statically,
-# the checkout needs to match the builtin-baseline of the manifest
+# vcpkg is used to build the third party dependencies, the checkout
+# needs to match the builtin-baseline of the manifest
 git clone https://github.com/microsoft/vcpkg.git ./vcpkg
 git -C ./vcpkg checkout "$(awk -F'"' '/"builtin-baseline"/{print $4; exit}' vcpkg.json)"
 
@@ -45,7 +45,6 @@ export RUSTUP_TOOLCHAIN=stable
 
 # Apply required patches:
 # From the AUR 'ladybird' package:
-# - link-static-harfbuzz-fontconfig: static vcpkg build needs these symbols force-included
 # - gcc-wno-restrict: GCC emits -Wrestrict warnings which break the build because of -Werror
 # Needed for the AppImage:
 # - sandbox-allow-time: allow the time() syscall in the seccomp sandbox
@@ -55,10 +54,14 @@ for patch in ../patches/*.patch; do
 	patch -N -p1 --forward -i "$patch"
 done
 
+# The Release preset builds shared libraries (lagom + vcpkg deps), which keeps the
+# binaries small and avoids symbol collisions with the bundled Qt
 cmake \
-	--preset Distribution \
-	-B ./Build/distribution \
+	--preset Release \
+	-B ./Build/release \
 	-S ./ \
+	-DCMAKE_BUILD_TYPE=Release \
+	-DENABLE_LTO_FOR_RELEASE=OFF \
 	-DENABLE_INSTALL_HEADERS=OFF \
 	-DCMAKE_INSTALL_PREFIX='/opt/ladybird/usr' \
 	-DCMAKE_INSTALL_LIBEXECDIR='lib/ladybird' \
@@ -66,5 +69,5 @@ cmake \
 	-DVCPKG_ROOT="$VCPKG_ROOT" \
 	-Wno-dev
 
-cmake --build ./Build/distribution
-cmake --install ./Build/distribution
+cmake --build ./Build/release
+cmake --install ./Build/release
