@@ -14,7 +14,12 @@ export DESKTOP=https://raw.githubusercontent.com/LadybirdBrowser/ladybird/refs/h
 quick-sharun \
 	/opt/ladybird/usr/bin/* \
 	/opt/ladybird/usr/lib   \
+	/opt/angle/usr/lib      \
 	/opt/ladybird/usr/share
+
+# ANGLE provides its own libEGL/libGLESv2 which must override the mesa ones,
+# otherwise the GLES symbols collide. Move them to the top of AppDir/lib.
+mv -v ./AppDir/lib/angle/usr/lib/* ./AppDir/lib
 
 # Turn AppDir into AppImage
 quick-sharun --make-appimage

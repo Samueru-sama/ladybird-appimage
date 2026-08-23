@@ -25,6 +25,10 @@ echo "Installing debloated packages..."
 echo "---------------------------------------------------------------"
 get-debloated-pkgs --add-common --prefer-nano intel-media-driver-mini ffmpeg-mini
 
+# Use the system ANGLE package instead of building it via vcpkg, it is a huge
+# Chromium-based build and the Arch package ships the same chromium/7258 version
+make-aur-package --chaotic-aur angle
+
 # If the application needs to be manually built that has to be done down here
 echo "Building Ladybird..."
 echo "---------------------------------------------------------------"
@@ -38,6 +42,17 @@ echo "$VERSION" > ~/version
 # needs to match the builtin-baseline of the manifest
 git clone https://github.com/microsoft/vcpkg.git ./vcpkg
 git -C ./vcpkg checkout "$(awk -F'"' '/"builtin-baseline"/{print $4; exit}' vcpkg.json)"
+
+# Drop angle from the vcpkg manifest so the system package is used instead
+python3 - <<'EOF'
+import json
+with open('vcpkg.json') as f:
+    data = json.load(f)
+data['dependencies'] = [d for d in data['dependencies'] if not (isinstance(d, dict) and d.get('name') == 'angle')]
+data['overrides'] = [d for d in data['overrides'] if d.get('name') != 'angle']
+with open('vcpkg.json', 'w') as f:
+    json.dump(data, f, indent=2)
+EOF
 
 export VCPKG_ROOT="$PWD/vcpkg"
 export VCPKG_DISABLE_METRICS="true"
