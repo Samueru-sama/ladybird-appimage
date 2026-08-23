@@ -11,12 +11,13 @@ export ICON=https://raw.githubusercontent.com/LadybirdBrowser/ladybird/refs/head
 export DESKTOP=https://raw.githubusercontent.com/LadybirdBrowser/ladybird/refs/heads/master/Meta/CMake/freedesktop/org.ladybird.Ladybird.desktop
 
 # Deploy dependencies
+export LD_LIBRARY_PATH="/opt/ladybird/usr/lib:/opt/angle/usr/lib"
 quick-sharun \
 	/opt/ladybird/usr/bin/* \
 	/opt/ladybird/usr/lib   \
 	/opt/angle/usr/lib      \
 	/opt/ladybird/usr/share
-
+unset LD_LIBRARY_PATH
 # ANGLE provides its own libEGL/libGLESv2 which must override the mesa ones,
 # otherwise the GLES symbols collide. Move them to the top of AppDir/lib.
 mv -v ./AppDir/lib/angle/usr/lib/* ./AppDir/lib
